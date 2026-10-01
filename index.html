@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>共生优化 · 设备诊断面板</title>
+<style>
+:root {
+  --bg: #f5f5f7;
+  --surface: #ffffff;
+  --on-surface: #1c1c1e;
+  --primary: #2f6fed;
+  --warn: #d9534f;
+  --ok: #2e8b57;
+  --radius: 16px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--on-surface);
+  -webkit-font-smoothing: antialiased;
+}
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top, 0px) + 18px) 18px 14px;
+  background: linear-gradient(135deg, #2f6fed, #5a9cff);
+  color: #fff;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo {
+  width: 46px; height: 46px; border-radius: 13px;
+  background: rgba(255,255,255,.22);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 17px;
+}
+h1 { margin: 0; font-size: 19px; letter-spacing: .3px; }
+.ver { font-size: 11px; font-weight: 500; opacity: .85; }
+.sub { margin: 3px 0 0; font-size: 12px; opacity: .85; }
+.state-pill {
+  background: rgba(255,255,255,.25);
+  padding: 5px 13px; border-radius: 20px;
+  font-size: 12px; font-weight: 600;
+}
+main { padding: 14px 14px calc(env(safe-area-inset-bottom, 0px) + 24px); }
+.notice {
+  margin: 14px; padding: 12px 14px;
+  background: #fff8e1; color: #8a6d1f;
+  border-left: 4px solid #f0b429;
+  border-radius: 10px; font-size: 13px; line-height: 1.6;
+}
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; }
+h3 { margin: 0 0 8px; font-size: 13px; color: #666; }
+.hint { font-size: 12.5px; color: #777; margin: 0 0 12px; line-height: 1.6; }
+code { background: #f0f0f3; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-bottom: 12px;
+}
+.stat {
+  background: #f6f7fa; border-radius: 12px; padding: 10px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.stat .k { font-size: 11px; color: #888; }
+.stat .v { font-size: 13px; font-weight: 600; word-break: break-all; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn {
+  border: none; border-radius: 12px;
+  padding: 11px 16px;
+  font-size: 13.5px; font-weight: 500;
+  background: #eef1f7; color: var(--on-surface);
+  cursor: pointer; transition: .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.warn { background: #fdecea; color: var(--warn); }
+.btn.ghost { background: transparent; border: 1px solid #d8dce6; }
+.output {
+  background: #111; color: #b6f0b6;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11.5px; line-height: 1.55;
+  border-radius: 12px; padding: 12px;
+  max-height: 340px; overflow: auto;
+  white-space: pre-wrap; word-break: break-all;
+  margin-top: 12px;
+}
+label {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f0f0f3;
+  font-size: 13.5px;
+}
+label:last-child { border-bottom: none; }
+.switch .slider {
+  width: 46px; height: 26px; border-radius: 20px;
+  background: #d8dce6; position: relative; cursor: pointer;
+  transition: .2s; flex: 0 0 auto;
+}
+.switch .slider::after {
+  content: ""; position: absolute; top: 3px; left: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  transition: .2s;
+}
+.switch input { display: none; }
+.switch input:checked + .slider { background: var(--primary); }
+.switch input:checked + .slider::after { transform: translateX(20px); }
+ul { list-style: none; padding: 0; margin: 0; }
+ul li {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px; background: #f6f7fa; border-radius: 10px;
+  font-size: 12.5px; margin-bottom: 6px;
+}
+ul li .k { color: #888; flex: 0 0 auto; width: 96px; }
+ul li .vv { flex: 1; text-align: right; word-break: break-all; }
+.about p { font-size: 13px; line-height: 1.7; color: #555; }
+.copy { font-size: 11.5px; color: #aaa; text-align: center; margin: 12px 0 0; }
+.bar {
+  height: 6px; border-radius: 4px; background: #eceef3; margin-top: 6px; overflow: hidden;
+}
+.bar > i { display: block; height: 100%; border-radius: 4px; background: var(--primary); transition: width .3s; }
+.bar.warn > i { background: var(--warn); }
+@media (max-width: 360px) {
+  .grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">共生</div>
+    <div>
+      <h1>共生优化 <span class="ver">设备诊断面板</span></h1>
+      <p class="sub">纯浏览器原生 API · 无需后端 · 无需安装</p>
+    </div>
+  </div>
+  <div class="state-pill" id="statePill">检测中</div>
+</header>
+<section class="notice">
+  ⚠️ 本面板运行在浏览器沙箱内，所有数据来自浏览器原生 API，<b>不依赖任何后端、插件或 ADB</b>。
+  浏览器出于安全与隐私限制，<b>无法读取 Android 系统配置、进程列表与温度传感</b>，也无法修改任何系统设置。
+</section>
+<main>
+  <div class="card">
+    <h2>设备仪表盘</h2>
+    <div class="grid" id="dashboard">
+      <div class="stat"><span class="k">平台</span><span class="v" id="d-platform">—</span></div>
+      <div class="stat"><span class="k">CPU 逻辑核心</span><span class="v" id="d-cores">—</span></div>
+      <div class="stat"><span class="k">设备内存</span><span class="v" id="d-mem">—</span></div>
+      <div class="stat"><span class="k">电池</span><span class="v" id="d-bat">—</span></div>
+      <div class="stat"><span class="k">屏幕</span><span class="v" id="d-screen">—</span></div>
+      <div class="stat"><span class="k">在线状态</span><span class="v" id="d-online">—</span></div>
+    </div>
+    <button class="btn primary" onclick="App.refresh()">↻ 刷新数据</button>
+  </div>
+
+  <div class="card">
+    <h2>硬件与系统信息</h2>
+    <ul id="infoList"></ul>
+  </div>
+
+  <div class="card">
+    <h2>内存与存储</h2>
+    <p class="hint" id="memHint">读取浏览器内存提示与站点存储配额估算。</p>
+    <div id="memBlock"></div>
+  </div>
+
+  <div class="card">
+    <h2>电池</h2>
+    <p class="hint">仅 Chromium 系浏览器支持，Firefox / Safari 不提供该接口。</p>
+    <div id="batBlock"></div>
+    <button class="btn ghost" onclick="App.loadBattery()">读取电池</button>
+  </div>
+
+  <div class="card">
+    <h2>网络</h2>
+    <ul id="netList"></ul>
+  </div>
+
+  <div class="card">
+    <h2>CPU 压力测试（估算负载）</h2>
+    <p class="hint">在 Web Worker 中跑 1 秒忙循环，测量主线程帧耗时与计算吞吐量，作为性能参考。</p>
+    <button class="btn" onclick="App.bench()">开始 1 秒压力测试</button>
+    <pre id="benchOut" class="output" hidden></pre>
+  </div>
+
+  <div class="card">
+    <h2>完整诊断报告</h2>
+    <p class="hint">把当前可读到的所有浏览器 API 信息一次性汇总输出。</p>
+    <button class="btn primary" onclick="App.snapshot()">👁 生成报告</button>
+    <pre id="snapOut" class="output" hidden></pre>
+  </div>
+
+  <div class="card about">
+    <h2>能力边界说明</h2>
+    <p>浏览器无法提供以下能力，因此本面板不做模拟填充：</p>
+    <ul>
+      <li><span class="k">系统配置读写</span><span class="vv">无法访问 Android settings / 写任何系统键值</span></li>
+      <li><span class="k">进程与应用管控</span><span class="vv">无法列出或 force-stop 应用、无法调用 appops</span></li>
+      <li><span class="k">内核与传感器</span><span class="vv">无法读 /proc、温度、cpufreq、SELinux</span></li>
+      <li><span class="k">保活守护</span><span class="vv">无权限拉起应用、无法后台常驻</span></li>
+    </ul>
+    <p class="copy">共生科技研发 出品 · 纯前端诊断版</p>
+  </div>
+</main>
+<script>
+(function () {
+'use strict';
+
+var ua = navigator.userAgent;
+var isAndroid = /Android/i.test(ua);
+var isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+function $(s) { return document.querySelector(s); }
+function setPill(txt, ok) {
+  var p = $('#statePill');
+  p.textContent = txt;
+  p.style.background = ok ? 'rgba(46,139,87,.85)' : 'rgba(217,83,79,.85)';
+}
+
+function fmtBytes(n) {
+  if (!n && n !== 0) return '—';
+  if (n >= 1073741824) return (n / 1073741824).toFixed(2) + ' GB';
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+  if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+  return n + ' B';
+}
+function platformName() {
+  if (navigator.userAgentData && navigator.userAgentData.platform) return navigator.userAgentData.platform;
+  if (navigator.platform) return navigator.platform;
+  return '—';
+}
+
+// ---------- 硬件与系统信息 ----------
+function collectInfo() {
+  var rows = [];
+  rows.push(['平台', platformName()]);
+  rows.push(['User-Agent', ua]);
+  if (navigator.userAgentData) {
+    try {
+      var b = navigator.userAgentData.brands;
+      if (b) rows.push(['UA Brands', b.map(function (x) { return x.brand + ' ' + x.version; }).join(', ')]);
+    } catch (e) {}
+    if (typeof navigator.userAgentData.mobile === 'boolean') rows.push(['移动设备', navigator.userAgentData.mobile ? '是' : '否']);
+  }
+  rows.push(['CPU 逻辑核心', navigator.hardwareConcurrency || '不可用']);
+  rows.push(['设备内存(GB)', ('deviceMemory' in navigator) ? navigator.deviceMemory + '（粗粒度估值）' : '不可用']);
+  rows.push(['语言', navigator.language]);
+  rows.push(['Cookie 启用', navigator.cookieEnabled ? '是' : '否']);
+  rows.push(['在线', navigator.onLine ? '是' : '否']);
+  rows.push(['屏幕', screen.width + '×' + screen.height + ' @' + (window.devicePixelRatio || 1) + 'x']);
+  rows.push(['色彩深度', screen.colorDepth + ' bit']);
+  rows.push(['视口', window.innerWidth + '×' + window.innerHeight]);
+  rows.push(['时区', Intl.DateTimeFormat().resolvedOptions().timeZone || '—']);
+  if ('maxTouchPoints' in navigator) rows.push(['最大触摸点数', navigator.maxTouchPoints]);
+  if (isAndroid) {
+    var m = ua.match(/Android\s([\d.]+)/);
+    if (m) rows.push(['Android 版本', m[1]]);
+  }
+  if (isIOS) {
+    var im = ua.match(/OS\s([\d_]+)/);
+    if (im) rows.push(['iOS 版本', im[1].replace(/_/g, '.')]);
+  }
+  return rows;
+}
+
+function renderInfo() {
+  var ul = $('#infoList');
+  ul.innerHTML = '';
+  collectInfo().forEach(function (r) {
+    var li = document.createElement('li');
+    var k = document.createElement('span'); k.className = 'k'; k.textContent = r[0];
+    var v = document.createElement('span'); v.className = 'vv'; v.textContent = r[1];
+    li.appendChild(k); li.appendChild(v); ul.appendChild(li);
+  });
+}
+
+// ---------- 仪表盘 ----------
+function refresh() {
+  $('#d-platform').textContent = platformName();
+  $('#d-cores').textContent = navigator.hardwareConcurrency || '—';
+  $('#d-mem').textContent = ('deviceMemory' in navigator) ? (navigator.deviceMemory + ' GB') : '不可用';
+  $('#d-screen').textContent = screen.width + '×' + screen.height;
+  $('#d-online').textContent = navigator.onLine ? '在线' : '离线';
+  loadBatteryQuick();
+  renderInfo();
+  loadNet();
+  loadMem();
+  var apiCount = 0;
+  if ('hardwareConcurrency' in navigator) apiCount++;
+  if ('deviceMemory' in navigator) apiCount++;
+  if ('getBattery' in navigator) apiCount++;
+  if (navigator.storage && navigator.storage.estimate) apiCount++;
+  if (navigator.connection) apiCount++;
+  setPill('API 可用 ' + apiCount + '/5', true);
+}
+
+// ---------- 内存与存储 ----------
+function loadMem() {
+  var block = $('#memBlock');
+  var html = '';
+  if (navigator.storage && navigator.storage.estimate) {
+    navigator.storage.estimate().then(function (e) {
+      var q = e.quota || 0, u = e.usage || 0;
+      var pct = q ? Math.min(100, (u / q * 100)) : 0;
+      var warn = pct > 80 ? 'warn' : '';
+      html = '<div class="stat"><span class="k">站点可用配额</span><span class="v">' + fmtBytes(q) + '</span></div>'
+           + '<div class="stat"><span class="k">已使用</span><span class="v">' + fmtBytes(u) + '</span></div>'
+           + '<div class="stat"><span class="k">使用率</span><span class="v">' + pct.toFixed(1) + '%</span></div>'
+           + '<div class="' + warn + ' bar"><i style="width:' + pct + '%"></i></div>';
+      block.innerHTML = '<div class="grid">' + html + '</div>';
+    }).catch(function () {
+      block.innerHTML = '<p class="hint">存储估算接口不可用</p>';
+    });
+  } else {
+    block.innerHTML = '<p class="hint">当前浏览器不支持 StorageManager.estimate</p>';
+  }
+  if ('memory' in performance) {
+    try {
+      var m = performance.memory;
+      var wrap = document.createElement('div');
+      wrap.style.marginTop = '12px';
+      wrap.innerHTML = '<h3>performance.memory（仅 Chromium）</h3>'
+        + '<div class="grid">'
+        + '<div class="stat"><span class="k">JS 堆上限</span><span class="v">' + fmtBytes(m.jsHeapSizeLimit) + '</span></div>'
+        + '<div class="stat"><span class="k">已用堆</span><span class="v">' + fmtBytes(m.usedJSHeapSize) + '</span></div>'
+        + '<div class="stat"><span class="k">分配总量</span><span class="v">' + fmtBytes(m.totalJSHeapSize) + '</span></div>'
+        + '</div>';
+      block.appendChild(wrap);
+    } catch (e) {}
+  }
+}
+
+// ---------- 电池 ----------
+function readBattery(bat) {
+  var pct = Math.round(bat.level * 100);
+  var s = pct + '%';
+  if (bat.charging) s += ' · 充电中';
+  var txt = s;
+  if (bat.charging && bat.chargingTime && isFinite(bat.chargingTime) && bat.chargingTime > 0) txt += ' · 充满约 ' + Math.round(bat.chargingTime / 60) + ' 分钟';
+  if (!bat.charging && bat.dischargingTime && isFinite(bat.dischargingTime) && bat.dischargingTime > 0) txt += ' · 剩余约 ' + Math.round(bat.dischargingTime / 60) + ' 分钟';
+  $('#d-bat').textContent = txt;
+  var block = $('#batBlock');
+  block.innerHTML = '<div class="grid">'
+    + '<div class="stat"><span class="k">电量</span><span class="v">' + pct + '%</span></div>'
+    + '<div class="stat"><span class="k">充电中</span><span class="v">' + (bat.charging ? '是' : '否') + '</span></div>'
+    + '<div class="stat"><span class="k">状态</span><span class="v">' + (bat.charging ? '已接电' : '放电中') + '</span></div>'
+    + '</div>';
+}
+function loadBatteryQuick() {
+  if (!('getBattery' in navigator)) { $('#d-bat').textContent = '不支持'; return; }
+  navigator.getBattery().then(readBattery).catch(function () { $('#d-bat').textContent = '拒绝/失败'; });
+}
+function loadBattery() {
+  var block = $('#batBlock');
+  if (!('getBattery' in navigator)) {
+    block.innerHTML = '<p class="hint">当前浏览器未暴露 navigator.getBattery（Firefox / Safari 及部分移动端均不支持）。</p>';
+    return;
+  }
+  navigator.getBattery().then(function (bat) {
+    readBattery(bat);
+    bat.addEventListener('levelchange', function () { readBattery(bat); });
+    bat.addEventListener('chargingchange', function () { readBattery(bat); });
+  }).catch(function (e) {
+    block.innerHTML = '<p class="hint">读取失败：' + (e && e.message || e) + '</p>';
+  });
+}
+
+// ---------- 网络 ----------
+function loadNet() {
+  var ul = $('#netList');
+  ul.innerHTML = '';
+  var rows = [['在线', navigator.onLine ? '是' : '否']];
+  if (navigator.connection) {
+    var c = navigator.connection;
+    var map = { 'slow-2g': 'Slow 2G', '2g': '2G', '3g': '3G', '4g': '4G', '5g': '5G' };
+    rows.push(['连接类型', c.effectiveType ? (map[c.effectiveType] || c.effectiveType) : '—']);
+    rows.push(['下行估算', c.downlink ? c.downlink + ' Mbps' : '—']);
+    rows.push(['RTT', c.rtt ? c.rtt + ' ms' : '—']);
+    rows.push(['省流量模式', c.saveData ? '开启' : '关闭']);
+    if ('type' in c) rows.push(['底层类型', c.type || '—']);
+  } else {
+    rows.push(['Network Info API', '不可用']);
+  }
+  rows.forEach(function (r) {
+    var li = document.createElement('li');
+    var k = document.createElement('span'); k.className = 'k'; k.textContent = r[0];
+    var v = document.createElement('span'); v.className = 'vv'; v.textContent = r[1];
+    li.appendChild(k); li.appendChild(v); ul.appendChild(li);
+  });
+}
+
+// ---------- 压力测试 ----------
+function bench() {
+  var out = $('#benchOut');
+  out.hidden = false;
+  out.textContent = '运行中…';
+  var t0 = performance.now();
+  var mainFrames = [];
+  var raf = window.requestAnimationFrame;
+  var stop = false;
+  function tick(t) {
+    mainFrames.push(t);
+    if (!stop) raf(tick);
+  }
+  raf(tick);
+  var blob = new Blob([[
+    'self.onmessage=function(){var i=0,s=0,t=Date.now()+1000;while(Date.now()<t){i++;s+=Math.sqrt(i);}postMessage({iters:i,s:s,ms:1000});};'
+  ].join('')], { type: 'application/javascript' });
+  var w = new Worker(URL.createObjectURL(blob));
+  w.onmessage = function (e) {
+    stop = true;
+    var dt = performance.now() - t0;
+    var d = e.data;
+    var evens = mainFrames.length > 2 ? (mainFrames[mainFrames.length - 1] - mainFrames[0]) : 0;
+    var drops = evens ? Math.max(0, 60 - (mainFrames.length - 1) * 1000 / evens) : 0;
+    out.textContent =
+      '计算耗时：' + d.ms.toFixed(0) + ' ms\n' +
+      'Worker 迭代次数：' + d.iters.toLocaleString() + '\n' +
+      '主线程帧数：' + (mainFrames.length - 1) + '\n' +
+      '总帧间隔：' + evens.toFixed(0) + ' ms\n' +
+      '主线程帧耗时：' + (evens / Math.max(1, mainFrames.length - 1)).toFixed(1) + ' ms\n' +
+      '掉帧（相对 60fps）：' + drops.toFixed(0) + ' 帧\n' +
+      '端到端耗时：' + dt.toFixed(0) + ' ms\n' +
+      '说明：此结果仅反映浏览器 JS 引擎与当前主线程负载，不等同于系统 CPU 占用率。';
+    w.terminate();
+  };
+  w.postMessage('start');
+}
+
+// ---------- 诊断报告 ----------
+function snapshot() {
+  var el = $('#snapOut');
+  el.hidden = false;
+  var lines = ['=== 共生优化 · 设备诊断报告（纯前端）===', ''];
+  lines.push('[采集时间] ' + new Date().toLocaleString());
+  lines.push('[环境] ' + ua);
+  lines.push('');
+  lines.push('— 设备与硬件 —');
+  collectInfo().forEach(function (r) { lines.push('  ' + r[0] + '：' + r[1]); });
+  if ('deviceMemory' in navigator) lines.push('  deviceMemory 粗粒度：' + navigator.deviceMemory + ' GB（仅 2 的幂档位）');
+  lines.push('');
+  lines.push('— 屏幕 —');
+  lines.push('  分辨率：' + screen.width + '×' + screen.height);
+  lines.push('  可用区域：' + screen.availWidth + '×' + screen.availHeight);
+  lines.push('  色彩深度：' + screen.colorDepth + ' bit');
+  lines.push('  像素比：' + (window.devicePixelRatio || 1));
+  lines.push('  视口：' + window.innerWidth + '×' + window.innerHeight);
+  lines.push('');
+  lines.push('— 电池 —');
+  if ('getBattery' in navigator) {
+    navigator.getBattery().then(function (bat) {
+      lines.push('  电量：' + Math.round(bat.level * 100) + '%');
+      lines.push('  充电中：' + (bat.charging ? '是' : '否'));
+      lines.push('  chargingTime：' + bat.chargingTime);
+      lines.push('  dischargingTime：' + bat.dischargingTime);
+      finish();
+    }).catch(function (e) {
+      lines.push('  读取失败：' + (e && e.message || e));
+      finish();
+    });
+  } else {
+    lines.push('  当前浏览器不支持 Battery Status API');
+    finish();
+  }
+  function finish() {
+    if (navigator.storage && navigator.storage.estimate) {
+      navigator.storage.estimate().then(function (e) {
+        lines.push('');
+        lines.push('— 站点存储 —');
+        lines.push('  配额：' + fmtBytes(e.quota));
+        lines.push('  已用：' + fmtBytes(e.usage));
+        render();
+      }).catch(function () { render(); });
+    } else {
+      render();
+    }
+  }
+  function render() {
+    el.textContent = lines.join('\n') + '\n=== 报告结束 ===';
+  }
+}
+
+var App = {
+  refresh: refresh,
+  loadBattery: loadBattery,
+  loadNet: loadNet,
+  loadMem: loadMem,
+  bench: bench,
+  snapshot: snapshot
+};
+window.App = App;
+
+refresh();
+if ('connection' in navigator && navigator.connection && navigator.connection.addEventListener) {
+  navigator.connection.addEventListener('change', loadNet);
+}
+window.addEventListener('online', refresh);
+window.addEventListener('offline', refresh);
+})();
+</script>
+</body>
+</html>
